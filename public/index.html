@@ -208,10 +208,13 @@
     }
 
     .issue {
+      padding: 0.35rem 0;
+      font-size: 0.875rem;
+    }
+
+    .issue-header {
       display: flex;
       gap: 0.5rem;
-      padding: 0.25rem 0;
-      font-size: 0.875rem;
       align-items: baseline;
     }
 
@@ -230,24 +233,32 @@
       white-space: nowrap;
     }
 
-    .comment {
-      font-size: 0.85rem;
-      padding: 0.25rem 0;
-      color: #344054;
+    .issue-transition {
+      font-size: 0.75rem;
+      color: #b45309;
+      white-space: nowrap;
     }
 
-    .comment-on {
-      font-family: "SF Mono", "Fira Code", monospace;
+    .issue-tag {
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      background: #dbeafe;
+      color: #1d4ed8;
+      padding: 0.1rem 0.4rem;
+      border-radius: 3px;
+      white-space: nowrap;
+    }
+
+    .issue-comments {
+      margin-left: 1.5rem;
+      margin-top: 0.2rem;
+    }
+
+    .issue-comment {
       font-size: 0.8rem;
-      color: #2563eb;
-      text-decoration: none;
-    }
-    .comment-on:hover { text-decoration: underline; }
-
-    .comment-body {
       color: #667085;
-      font-size: 0.8rem;
-      margin-left: 1rem;
+      padding: 0.15rem 0;
     }
 
     .toast {
@@ -468,10 +479,7 @@ function renderActivity() {
   content.innerHTML = "";
 
   for (const member of activityData) {
-    const total =
-      member.updatedIssues.length +
-      member.createdIssues.length +
-      member.comments.length;
+    const total = member.issues.length + member.orphanComments.length;
 
     const div = document.createElement("div");
     div.className = "member" + (total === 0 ? " no-activity" : "");
@@ -479,40 +487,33 @@ function renderActivity() {
 
     let html = `<div class="member-name">${esc(member.name)}</div>`;
 
+    const total = member.issues.length + member.orphanComments.length;
+
     if (total === 0) {
-      html += '<div style="font-size:0.85rem;color:#666">No activity in the selected timeframe</div>';
+      html += '<div style="font-size:0.85rem;color:#98a2b3">No activity in the selected timeframe</div>';
     } else {
-      if (member.updatedIssues.length) {
-        html += '<div class="section-label">Updated issues</div>';
-        for (const i of member.updatedIssues) {
-          html += `<div class="issue">
-            <a class="issue-id" href="${esc(i.url)}" target="_blank">${esc(i.identifier)}</a>
-            <span>${esc(i.title)}</span>
-            <span class="issue-state">[${esc(i.state)}]</span>
-          </div>`;
-        }
-      }
-      if (member.createdIssues.length) {
-        html += '<div class="section-label">Created issues</div>';
-        for (const i of member.createdIssues) {
-          html += `<div class="issue">
-            <a class="issue-id" href="${esc(i.url)}" target="_blank">${esc(i.identifier)}</a>
-            <span>${esc(i.title)}</span>
-            <span class="issue-state">[${esc(i.state)}]</span>
-          </div>`;
-        }
-      }
-      if (member.comments.length) {
-        html += '<div class="section-label">Comments</div>';
-        for (const c of member.comments) {
-          const on = c.issue ? c.issue.identifier : "unknown";
-          const title = c.issue ? c.issue.title : "";
-          const url = c.issue ? c.issue.url : "#";
-          const body = c.body.length > 140 ? c.body.slice(0, 140) + "..." : c.body;
-          html += `<div class="comment">
-            <a class="comment-on" href="${esc(url)}" target="_blank">${esc(on)} ${esc(title)}</a>
-            <div class="comment-body">${esc(body)}</div>
-          </div>`;
+      if (member.issues.length) {
+        html += '<div class="section-label">Issues</div>';
+        for (const i of member.issues) {
+          html += `<div class="issue"><div class="issue-header">`;
+          html += `<a class="issue-id" href="${esc(i.url)}" target="_blank">${esc(i.identifier)}</a>`;
+          html += `<span>${esc(i.title)}</span>`;
+          if (i.stateTransitions.length) {
+            html += `<span class="issue-transition">${esc(i.stateTransitions[i.stateTransitions.length - 1])}</span>`;
+          } else {
+            html += `<span class="issue-state">[${esc(i.state)}]</span>`;
+          }
+          if (i.created) html += `<span class="issue-tag">new</span>`;
+          html += `</div>`;
+          if (i.comments.length) {
+            html += `<div class="issue-comments">`;
+            for (const body of i.comments) {
+              const short = body.length > 140 ? body.slice(0, 140) + "..." : body;
+              html += `<div class="issue-comment">\u2192 ${esc(short)}</div>`;
+            }
+            html += `</div>`;
+          }
+          html += `</div>`;
         }
       }
     }
@@ -566,42 +567,27 @@ copyBtn.addEventListener("click", () => {
 
   // Team members
   for (const member of activityData) {
-    const total =
-      member.updatedIssues.length +
-      member.createdIssues.length +
-      member.comments.length;
-
+    const total = member.issues.length + member.orphanComments.length;
     const otherItems = getMemberOtherItems(member.id);
 
     if (total === 0 && otherItems.length === 0) continue;
 
     md += `## ${member.name}\n\n`;
 
-    if (member.updatedIssues.length) {
-      md += `### Updated Issues\n\n`;
-      for (const i of member.updatedIssues) {
-        md += `- [**${i.identifier}** ${i.title}](${i.url}) \u2014 *${i.state}*\n`;
-      }
-      md += `\n`;
-    }
-
-    if (member.createdIssues.length) {
-      md += `### Created Issues\n\n`;
-      for (const i of member.createdIssues) {
-        md += `- [**${i.identifier}** ${i.title}](${i.url}) \u2014 *${i.state}*\n`;
-      }
-      md += `\n`;
-    }
-
-    if (member.comments.length) {
-      md += `### Comments\n\n`;
-      for (const c of member.comments) {
-        const on = c.issue ? c.issue.identifier : "unknown";
-        const title = c.issue ? c.issue.title : "";
-        const url = c.issue ? c.issue.url : "";
-        const body = c.body.replace(/\n/g, " ").slice(0, 200);
-        md += `- [**${on}** ${title}](${url})\n`;
-        md += `    > ${body}${c.body.length > 200 ? "..." : ""}\n`;
+    if (member.issues.length) {
+      for (const i of member.issues) {
+        let status;
+        if (i.stateTransitions.length) {
+          status = i.stateTransitions[i.stateTransitions.length - 1];
+        } else {
+          status = i.state;
+        }
+        const tag = i.created ? " `NEW`" : "";
+        md += `- [**${i.identifier}** ${i.title}](${i.url}) \u2014 *${status}*${tag}\n`;
+        for (const body of i.comments) {
+          const short = body.replace(/\n/g, " ").slice(0, 200);
+          md += `    - ${short}${body.length > 200 ? "..." : ""}\n`;
+        }
       }
       md += `\n`;
     }

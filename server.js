@@ -34,6 +34,22 @@ app.get("/api/teams", async (_req, res) => {
   }
 });
 
+// ── Resolve workflow state name by ID (cached) ───────────────────────
+
+const stateCache = new Map();
+
+async function resolveStateName(stateId) {
+  if (!stateId) return null;
+  if (stateCache.has(stateId)) return stateCache.get(stateId);
+  try {
+    const s = await linear.workflowState(stateId);
+    stateCache.set(stateId, s.name);
+    return s.name;
+  } catch {
+    return null;
+  }
+}
+
 // ── API: fetch activity for a team ───────────────────────────────────
 
 app.get("/api/activity/:teamId", async (req, res) => {
@@ -70,48 +86,109 @@ app.get("/api/activity/:teamId", async (req, res) => {
           }),
         ]);
 
-        const resolveIssue = async (i) => {
+        // Build a map of issue identifier -> issue data
+        const issueMap = new Map();
+
+        const resolveAndAdd = async (i, section) => {
           const state = await i.state;
-          return {
-            identifier: i.identifier,
-            title: i.title,
-            url: i.url,
-            state: state?.name ?? "Unknown",
-          };
+
+          // Get state transitions within the timeframe
+          const history = await i.history({ first: 20 });
+          const transitions = (await Promise.all(
+            history.nodes
+              .filter((h) => h.fromStateId && h.toStateId && new Date(h.createdAt) >= new Date(since))
+              .map(async (h) => {
+                const [fromName, toName] = await Promise.all([
+                  resolveStateName(h.fromStateId),
+                  resolveStateName(h.toStateId),
+                ]);
+                return fromName && toName ? `${fromName} → ${toName}` : null;
+              })
+          )).filter(Boolean);
+
+          const key = i.identifier;
+          if (!issueMap.has(key)) {
+            issueMap.set(key, {
+              identifier: i.identifier,
+              title: i.title,
+              url: i.url,
+              state: state?.name ?? "Unknown",
+              stateTransitions: transitions,
+              sections: new Set(),
+              comments: [],
+            });
+          }
+          const entry = issueMap.get(key);
+          entry.sections.add(section);
+          // Merge transitions if not already present
+          for (const t of transitions) {
+            if (!entry.stateTransitions.includes(t)) {
+              entry.stateTransitions.push(t);
+            }
+          }
         };
 
-        const commentData = (await Promise.all(
+        await Promise.all([
+          ...updatedIssues.nodes.map((i) => resolveAndAdd(i, "updated")),
+          ...createdIssues.nodes.map((i) => resolveAndAdd(i, "created")),
+        ]);
+
+        // Attach comments to their parent issues (only if assigned to this member)
+        const orphanComments = [];
+        await Promise.all(
           comments.nodes.map(async (c) => {
             const issue = await c.issue;
-            if (!issue) return null;
+            if (!issue) return;
             const assignee = await issue.assignee;
-            if (assignee && assignee.id !== member.id) return null;
-            return {
-              body: c.body,
-              issue: { identifier: issue.identifier, title: issue.title, url: issue.url },
-            };
+            if (assignee && assignee.id !== member.id) return;
+
+            const body = c.body;
+            const key = issue.identifier;
+            if (issueMap.has(key)) {
+              issueMap.get(key).comments.push(body);
+            } else {
+              // Comment on own issue that wasn't in updated/created (edge case)
+              orphanComments.push({
+                body,
+                issue: { identifier: issue.identifier, title: issue.title, url: issue.url },
+              });
+            }
           })
-        )).filter(Boolean);
+        );
+
+        // Convert map to arrays, preserving updated vs created
+        const issues = [];
+        for (const entry of issueMap.values()) {
+          issues.push({
+            identifier: entry.identifier,
+            title: entry.title,
+            url: entry.url,
+            state: entry.state,
+            stateTransitions: entry.stateTransitions,
+            created: entry.sections.has("created"),
+            comments: entry.comments,
+          });
+        }
 
         return {
           id: member.id,
           name: member.name,
-          updatedIssues: await Promise.all(updatedIssues.nodes.map(resolveIssue)),
-          createdIssues: await Promise.all(createdIssues.nodes.map(resolveIssue)),
-          comments: commentData,
+          issues,
+          orphanComments,
         };
       })
     );
 
     // Sort: members with activity first
     results.sort((a, b) => {
-      const aTotal = a.updatedIssues.length + a.createdIssues.length + a.comments.length;
-      const bTotal = b.updatedIssues.length + b.createdIssues.length + b.comments.length;
+      const aTotal = a.issues.length + a.orphanComments.length;
+      const bTotal = b.issues.length + b.orphanComments.length;
       return bTotal - aTotal;
     });
 
     res.json(results);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 });
