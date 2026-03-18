@@ -9,14 +9,14 @@
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #0f0f0f;
-      color: #e0e0e0;
+      background: #f8f9fa;
+      color: #1a1a1a;
       padding: 2rem;
       max-width: 900px;
       margin: 0 auto;
     }
 
-    h1 { font-size: 1.5rem; margin-bottom: 1.5rem; color: #fff; }
+    h1 { font-size: 1.5rem; margin-bottom: 1.5rem; color: #111; }
 
     .toolbar {
       display: flex;
@@ -31,13 +31,13 @@
       font-size: 0.875rem;
       padding: 0.5rem 0.75rem;
       border-radius: 6px;
-      border: 1px solid #333;
-      background: #1a1a1a;
-      color: #e0e0e0;
+      border: 1px solid #d0d5dd;
+      background: #fff;
+      color: #1a1a1a;
       cursor: pointer;
     }
 
-    select:hover, button:hover { border-color: #555; }
+    select:hover, button:hover { border-color: #98a2b3; }
 
     button.primary {
       background: #2563eb;
@@ -56,11 +56,11 @@
     button.copy:hover { background: #15803d; }
 
     button.secondary {
-      background: #333;
-      border-color: #444;
-      color: #e0e0e0;
+      background: #eaecf0;
+      border-color: #d0d5dd;
+      color: #344054;
     }
-    button.secondary:hover { background: #444; }
+    button.secondary:hover { background: #d0d5dd; }
 
     button.add-btn {
       padding: 0.35rem 0.6rem;
@@ -72,7 +72,7 @@
     button.add-btn:hover { background: #1d4ed8; }
 
     .loading {
-      color: #888;
+      color: #667085;
       font-style: italic;
       padding: 2rem 0;
     }
@@ -80,8 +80,8 @@
     /* ── Custom person section ─────────────────────────────────── */
 
     .custom-person {
-      background: #1a1a1a;
-      border: 1px solid #2a2a2a;
+      background: #fff;
+      border: 1px solid #e4e7ec;
       border-radius: 8px;
       padding: 1.25rem;
       margin-bottom: 1.5rem;
@@ -98,7 +98,7 @@
     .custom-person-header span {
       font-size: 1.1rem;
       font-weight: 600;
-      color: #fff;
+      color: #111;
     }
 
     .custom-person-header input {
@@ -107,13 +107,13 @@
       font-size: 0.95rem;
       font-weight: 600;
       padding: 0.4rem 0.75rem;
-      background: #111;
-      border: 1px solid #333;
+      background: #f9fafb;
+      border: 1px solid #d0d5dd;
       border-radius: 6px;
-      color: #fff;
+      color: #111;
     }
     .custom-person-header input:focus { outline: none; border-color: #2563eb; }
-    .custom-person-header input::placeholder { color: #555; font-weight: 400; }
+    .custom-person-header input::placeholder { color: #98a2b3; font-weight: 400; }
 
     /* ── Shared: other items list ──────────────────────────────── */
 
@@ -133,22 +133,22 @@
       padding: 0.25rem 0.5rem;
       font-size: 0.75rem;
       background: transparent;
-      border: 1px solid #444;
-      color: #888;
+      border: 1px solid #d0d5dd;
+      color: #667085;
       line-height: 1;
     }
-    .other-item button:hover { color: #e55; border-color: #e55; }
-    .other-item button.edit-btn:hover { color: #60a5fa; border-color: #60a5fa; }
+    .other-item button:hover { color: #dc2626; border-color: #dc2626; }
+    .other-item button.edit-btn:hover { color: #2563eb; border-color: #2563eb; }
 
     .other-item-editing input {
       flex: 1;
       font-family: inherit;
       font-size: 0.85rem;
       padding: 0.3rem 0.6rem;
-      background: #111;
+      background: #f9fafb;
       border: 1px solid #2563eb;
       border-radius: 4px;
-      color: #e0e0e0;
+      color: #1a1a1a;
     }
     .other-item-editing input:focus { outline: none; }
 
@@ -169,19 +169,19 @@
       font-family: inherit;
       font-size: 0.85rem;
       padding: 0.5rem 0.75rem;
-      background: #111;
-      border: 1px solid #333;
+      background: #f9fafb;
+      border: 1px solid #d0d5dd;
       border-radius: 6px;
-      color: #e0e0e0;
+      color: #1a1a1a;
     }
     .note-input-row input:focus { outline: none; border-color: #2563eb; }
-    .note-input-row input::placeholder { color: #555; }
+    .note-input-row input::placeholder { color: #98a2b3; }
 
     /* ── Member cards ───────────────────────────────────────────── */
 
     .member {
-      background: #1a1a1a;
-      border: 1px solid #2a2a2a;
+      background: #fff;
+      border: 1px solid #e4e7ec;
       border-radius: 8px;
       padding: 1.25rem;
       margin-bottom: 1rem;
@@ -193,7 +193,7 @@
     .member-name {
       font-size: 1.1rem;
       font-weight: 600;
-      color: #fff;
+      color: #111;
       margin-bottom: 0.75rem;
     }
 
@@ -202,7 +202,7 @@
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      color: #888;
+      color: #667085;
       margin-top: 0.75rem;
       margin-bottom: 0.35rem;
     }
@@ -218,30 +218,34 @@
     .issue-id {
       font-family: "SF Mono", "Fira Code", monospace;
       font-size: 0.8rem;
-      color: #60a5fa;
+      color: #2563eb;
       white-space: nowrap;
+      text-decoration: none;
     }
+    .issue-id:hover { text-decoration: underline; }
 
     .issue-state {
       font-size: 0.75rem;
-      color: #888;
+      color: #667085;
       white-space: nowrap;
     }
 
     .comment {
       font-size: 0.85rem;
       padding: 0.25rem 0;
-      color: #ccc;
+      color: #344054;
     }
 
     .comment-on {
       font-family: "SF Mono", "Fira Code", monospace;
       font-size: 0.8rem;
-      color: #60a5fa;
+      color: #2563eb;
+      text-decoration: none;
     }
+    .comment-on:hover { text-decoration: underline; }
 
     .comment-body {
-      color: #aaa;
+      color: #667085;
       font-size: 0.8rem;
       margin-left: 1rem;
     }
@@ -482,7 +486,7 @@ function renderActivity() {
         html += '<div class="section-label">Updated issues</div>';
         for (const i of member.updatedIssues) {
           html += `<div class="issue">
-            <span class="issue-id">${esc(i.identifier)}</span>
+            <a class="issue-id" href="${esc(i.url)}" target="_blank">${esc(i.identifier)}</a>
             <span>${esc(i.title)}</span>
             <span class="issue-state">[${esc(i.state)}]</span>
           </div>`;
@@ -492,7 +496,7 @@ function renderActivity() {
         html += '<div class="section-label">Created issues</div>';
         for (const i of member.createdIssues) {
           html += `<div class="issue">
-            <span class="issue-id">${esc(i.identifier)}</span>
+            <a class="issue-id" href="${esc(i.url)}" target="_blank">${esc(i.identifier)}</a>
             <span>${esc(i.title)}</span>
             <span class="issue-state">[${esc(i.state)}]</span>
           </div>`;
@@ -501,10 +505,12 @@ function renderActivity() {
       if (member.comments.length) {
         html += '<div class="section-label">Comments</div>';
         for (const c of member.comments) {
-          const on = c.issue ? `${c.issue.identifier} ${c.issue.title}` : "unknown";
+          const on = c.issue ? c.issue.identifier : "unknown";
+          const title = c.issue ? c.issue.title : "";
+          const url = c.issue ? c.issue.url : "#";
           const body = c.body.length > 140 ? c.body.slice(0, 140) + "..." : c.body;
           html += `<div class="comment">
-            <span class="comment-on">${esc(on)}</span>
+            <a class="comment-on" href="${esc(url)}" target="_blank">${esc(on)} ${esc(title)}</a>
             <div class="comment-body">${esc(body)}</div>
           </div>`;
         }
@@ -574,7 +580,7 @@ copyBtn.addEventListener("click", () => {
     if (member.updatedIssues.length) {
       md += `### Updated Issues\n\n`;
       for (const i of member.updatedIssues) {
-        md += `- **${i.identifier}** ${i.title} \u2014 *${i.state}*\n`;
+        md += `- [**${i.identifier}** ${i.title}](${i.url}) \u2014 *${i.state}*\n`;
       }
       md += `\n`;
     }
@@ -582,7 +588,7 @@ copyBtn.addEventListener("click", () => {
     if (member.createdIssues.length) {
       md += `### Created Issues\n\n`;
       for (const i of member.createdIssues) {
-        md += `- **${i.identifier}** ${i.title} \u2014 *${i.state}*\n`;
+        md += `- [**${i.identifier}** ${i.title}](${i.url}) \u2014 *${i.state}*\n`;
       }
       md += `\n`;
     }
@@ -592,8 +598,9 @@ copyBtn.addEventListener("click", () => {
       for (const c of member.comments) {
         const on = c.issue ? c.issue.identifier : "unknown";
         const title = c.issue ? c.issue.title : "";
+        const url = c.issue ? c.issue.url : "";
         const body = c.body.replace(/\n/g, " ").slice(0, 200);
-        md += `- **${on}** ${title}\n`;
+        md += `- [**${on}** ${title}](${url})\n`;
         md += `    > ${body}${c.body.length > 200 ? "..." : ""}\n`;
       }
       md += `\n`;

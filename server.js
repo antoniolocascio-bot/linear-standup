@@ -75,6 +75,7 @@ app.get("/api/activity/:teamId", async (req, res) => {
           return {
             identifier: i.identifier,
             title: i.title,
+            url: i.url,
             state: state?.name ?? "Unknown",
           };
         };
@@ -87,7 +88,7 @@ app.get("/api/activity/:teamId", async (req, res) => {
             if (assignee && assignee.id !== member.id) return null;
             return {
               body: c.body,
-              issue: { identifier: issue.identifier, title: issue.title },
+              issue: { identifier: issue.identifier, title: issue.title, url: issue.url },
             };
           })
         )).filter(Boolean);
