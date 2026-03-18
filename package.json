@@ -1,0 +1,14 @@
+{
+  "name": "linear-standup",
+  "version": "1.0.0",
+  "description": "Local standup tool — fetches Linear activity per team member with notes and markdown export",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@linear/sdk": "^29.0.0",
+    "dotenv": "^16.4.0",
+    "express": "^4.21.0"
+  }
+}

@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Standup</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f0f0f;
+      color: #e0e0e0;
+      padding: 2rem;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    h1 { font-size: 1.5rem; margin-bottom: 1.5rem; color: #fff; }
+
+    .toolbar {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    select, button {
+      font-family: inherit;
+      font-size: 0.875rem;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      border: 1px solid #333;
+      background: #1a1a1a;
+      color: #e0e0e0;
+      cursor: pointer;
+    }
+
+    select:hover, button:hover { border-color: #555; }
+
+    button.primary {
+      background: #2563eb;
+      border-color: #2563eb;
+      color: #fff;
+      font-weight: 600;
+    }
+    button.primary:hover { background: #1d4ed8; }
+
+    button.copy {
+      background: #16a34a;
+      border-color: #16a34a;
+      color: #fff;
+      font-weight: 600;
+    }
+    button.copy:hover { background: #15803d; }
+
+    .loading {
+      color: #888;
+      font-style: italic;
+      padding: 2rem 0;
+    }
+
+    .member {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    .member.no-activity { opacity: 0.5; }
+
+    .member-name {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 0.75rem;
+    }
+
+    .section-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #888;
+      margin-top: 0.75rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .issue {
+      display: flex;
+      gap: 0.5rem;
+      padding: 0.25rem 0;
+      font-size: 0.875rem;
+      align-items: baseline;
+    }
+
+    .issue-id {
+      font-family: "SF Mono", "Fira Code", monospace;
+      font-size: 0.8rem;
+      color: #60a5fa;
+      white-space: nowrap;
+    }
+
+    .issue-state {
+      font-size: 0.75rem;
+      color: #888;
+      white-space: nowrap;
+    }
+
+    .comment {
+      font-size: 0.85rem;
+      padding: 0.25rem 0;
+      color: #ccc;
+    }
+
+    .comment-on {
+      font-family: "SF Mono", "Fira Code", monospace;
+      font-size: 0.8rem;
+      color: #60a5fa;
+    }
+
+    .comment-body {
+      color: #aaa;
+      font-size: 0.8rem;
+      margin-left: 1rem;
+    }
+
+    .notes-field {
+      width: 100%;
+      margin-top: 0.75rem;
+      padding: 0.5rem 0.75rem;
+      font-family: inherit;
+      font-size: 0.85rem;
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #e0e0e0;
+      resize: vertical;
+      min-height: 2.5rem;
+    }
+
+    .notes-field::placeholder { color: #555; }
+    .notes-field:focus { outline: none; border-color: #2563eb; }
+
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: #16a34a;
+      color: #fff;
+      padding: 0.75rem 1.25rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<h1>Standup</h1>
+
+<div class="toolbar">
+  <select id="team-select">
+    <option value="">Loading teams...</option>
+  </select>
+  <button class="primary" id="fetch-btn" disabled>Fetch activity</button>
+  <button class="copy" id="copy-btn" style="display:none">Copy as Markdown</button>
+</div>
+
+<div id="content"></div>
+<div class="toast" id="toast">Copied to clipboard</div>
+
+<script>
+const teamSelect = document.getElementById("team-select");
+const fetchBtn = document.getElementById("fetch-btn");
+const copyBtn = document.getElementById("copy-btn");
+const content = document.getElementById("content");
+const toast = document.getElementById("toast");
+
+let activityData = [];
+
+// ── Load teams ───────────────────────────────────────────────────────
+
+async function loadTeams() {
+  const res = await fetch("/api/teams");
+  const teams = await res.json();
+  teamSelect.innerHTML = "";
+  for (const t of teams) {
+    const opt = document.createElement("option");
+    opt.value = t.id;
+    opt.textContent = `${t.name} (${t.memberCount} members)`;
+    teamSelect.appendChild(opt);
+  }
+  fetchBtn.disabled = false;
+}
+
+loadTeams();
+
+// ── Fetch activity ───────────────────────────────────────────────────
+
+fetchBtn.addEventListener("click", async () => {
+  const teamId = teamSelect.value;
+  if (!teamId) return;
+
+  content.innerHTML = '<div class="loading">Fetching activity from Linear...</div>';
+  fetchBtn.disabled = true;
+  copyBtn.style.display = "none";
+
+  try {
+    const res = await fetch(`/api/activity/${teamId}`);
+    activityData = await res.json();
+    renderActivity();
+    copyBtn.style.display = "inline-block";
+  } catch (err) {
+    content.innerHTML = `<div class="loading">Error: ${err.message}</div>`;
+  } finally {
+    fetchBtn.disabled = false;
+  }
+});
+
+// ── Render ────────────────────────────────────────────────────────────
+
+function renderActivity() {
+  content.innerHTML = "";
+
+  for (const member of activityData) {
+    const total =
+      member.updatedIssues.length +
+      member.createdIssues.length +
+      member.comments.length;
+
+    const div = document.createElement("div");
+    div.className = "member" + (total === 0 ? " no-activity" : "");
+    div.dataset.memberId = member.id;
+
+    let html = `<div class="member-name">${esc(member.name)}</div>`;
+
+    if (total === 0) {
+      html += '<div style="font-size:0.85rem;color:#666">No activity in the last 24h</div>';
+    } else {
+      if (member.updatedIssues.length) {
+        html += '<div class="section-label">Updated issues</div>';
+        for (const i of member.updatedIssues) {
+          html += `<div class="issue">
+            <span class="issue-id">${esc(i.identifier)}</span>
+            <span>${esc(i.title)}</span>
+            <span class="issue-state">[${esc(i.state)}]</span>
+          </div>`;
+        }
+      }
+      if (member.createdIssues.length) {
+        html += '<div class="section-label">Created issues</div>';
+        for (const i of member.createdIssues) {
+          html += `<div class="issue">
+            <span class="issue-id">${esc(i.identifier)}</span>
+            <span>${esc(i.title)}</span>
+            <span class="issue-state">[${esc(i.state)}]</span>
+          </div>`;
+        }
+      }
+      if (member.comments.length) {
+        html += '<div class="section-label">Comments</div>';
+        for (const c of member.comments) {
+          const on = c.issue ? `${c.issue.identifier} ${c.issue.title}` : "unknown";
+          const body = c.body.length > 140 ? c.body.slice(0, 140) + "..." : c.body;
+          html += `<div class="comment">
+            <span class="comment-on">${esc(on)}</span>
+            <div class="comment-body">${esc(body)}</div>
+          </div>`;
+        }
+      }
+    }
+
+    html += `<textarea class="notes-field" data-member="${member.id}" placeholder="Notes for ${esc(member.name)}..."></textarea>`;
+
+    div.innerHTML = html;
+    content.appendChild(div);
+  }
+}
+
+// ── Copy as Markdown ─────────────────────────────────────────────────
+
+copyBtn.addEventListener("click", () => {
+  const today = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  let md = `# Standup — ${today}\n\n`;
+
+  for (const member of activityData) {
+    const total =
+      member.updatedIssues.length +
+      member.createdIssues.length +
+      member.comments.length;
+
+    const notes = document.querySelector(`textarea[data-member="${member.id}"]`)?.value?.trim();
+
+    if (total === 0 && !notes) continue;
+
+    md += `## ${member.name}\n\n`;
+
+    if (member.updatedIssues.length) {
+      md += "**Updated issues**\n";
+      for (const i of member.updatedIssues) {
+        md += `- \`${i.identifier}\` ${i.title} [${i.state}]\n`;
+      }
+      md += "\n";
+    }
+
+    if (member.createdIssues.length) {
+      md += "**Created issues**\n";
+      for (const i of member.createdIssues) {
+        md += `- \`${i.identifier}\` ${i.title} [${i.state}]\n`;
+      }
+      md += "\n";
+    }
+
+    if (member.comments.length) {
+      md += "**Comments**\n";
+      for (const c of member.comments) {
+        const on = c.issue ? `${c.issue.identifier} ${c.issue.title}` : "unknown";
+        md += `- on ${on}: ${c.body.slice(0, 200)}${c.body.length > 200 ? "..." : ""}\n`;
+      }
+      md += "\n";
+    }
+
+    if (notes) {
+      md += `**Notes**\n${notes}\n\n`;
+    }
+
+    md += "---\n\n";
+  }
+
+  navigator.clipboard.writeText(md.trimEnd()).then(() => {
+    toast.classList.add("show");
+    setTimeout(() => toast.classList.remove("show"), 2000);
+  });
+});
+
+function esc(s) {
+  const d = document.createElement("div");
+  d.textContent = s;
+  return d.innerHTML;
+}
+</script>
+</body>
+</html>
