@@ -79,17 +79,18 @@ app.get("/api/activity/:teamId", async (req, res) => {
           };
         };
 
-        const commentData = await Promise.all(
+        const commentData = (await Promise.all(
           comments.nodes.map(async (c) => {
             const issue = await c.issue;
+            if (!issue) return null;
+            const assignee = await issue.assignee;
+            if (assignee && assignee.id !== member.id) return null;
             return {
               body: c.body,
-              issue: issue
-                ? { identifier: issue.identifier, title: issue.title }
-                : null,
+              issue: { identifier: issue.identifier, title: issue.title },
             };
           })
-        );
+        )).filter(Boolean);
 
         return {
           id: member.id,
