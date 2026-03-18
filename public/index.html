@@ -138,6 +138,19 @@
       line-height: 1;
     }
     .other-item button:hover { color: #e55; border-color: #e55; }
+    .other-item button.edit-btn:hover { color: #60a5fa; border-color: #60a5fa; }
+
+    .other-item-editing input {
+      flex: 1;
+      font-family: inherit;
+      font-size: 0.85rem;
+      padding: 0.3rem 0.6rem;
+      background: #111;
+      border: 1px solid #2563eb;
+      border-radius: 4px;
+      color: #e0e0e0;
+    }
+    .other-item-editing input:focus { outline: none; }
 
     .other-items-list {
       margin-bottom: 0.5rem;
@@ -327,8 +340,21 @@ function renderCustomPersonOthers() {
   customPersonItems.forEach((text, idx) => {
     const row = document.createElement("div");
     row.className = "other-item";
-    row.innerHTML = `<span>\u2022 ${esc(text)}</span><button title="Remove">&times;</button>`;
-    row.querySelector("button").addEventListener("click", () => {
+    row.innerHTML = `<span>\u2022 ${esc(text)}</span><button class="edit-btn" title="Edit">\u270E</button><button title="Remove">&times;</button>`;
+    row.querySelector(".edit-btn").addEventListener("click", () => {
+      row.className = "other-item other-item-editing";
+      row.innerHTML = `<input type="text" value="${esc(text)}"><button class="add-btn" style="padding:0.3rem 0.6rem;font-size:0.75rem">Save</button>`;
+      const input = row.querySelector("input");
+      input.focus();
+      const save = () => {
+        const val = input.value.trim();
+        if (val) customPersonItems[idx] = val;
+        renderCustomPersonOthers();
+      };
+      row.querySelector("button").addEventListener("click", save);
+      input.addEventListener("keydown", (e) => { if (e.key === "Enter") save(); });
+    });
+    row.querySelector("button:last-child").addEventListener("click", () => {
       customPersonItems.splice(idx, 1);
       renderCustomPersonOthers();
     });
@@ -389,8 +415,21 @@ function renderMemberOthers(memberId) {
   items.forEach((text, idx) => {
     const row = document.createElement("div");
     row.className = "other-item";
-    row.innerHTML = `<span>\u2022 ${esc(text)}</span><button title="Remove">&times;</button>`;
-    row.querySelector("button").addEventListener("click", () => {
+    row.innerHTML = `<span>\u2022 ${esc(text)}</span><button class="edit-btn" title="Edit">\u270E</button><button title="Remove">&times;</button>`;
+    row.querySelector(".edit-btn").addEventListener("click", () => {
+      row.className = "other-item other-item-editing";
+      row.innerHTML = `<input type="text" value="${esc(text)}"><button class="add-btn" style="padding:0.3rem 0.6rem;font-size:0.75rem">Save</button>`;
+      const input = row.querySelector("input");
+      input.focus();
+      const save = () => {
+        const val = input.value.trim();
+        if (val) items[idx] = val;
+        renderMemberOthers(memberId);
+      };
+      row.querySelector("button").addEventListener("click", save);
+      input.addEventListener("keydown", (e) => { if (e.key === "Enter") save(); });
+    });
+    row.querySelector("button:last-child").addEventListener("click", () => {
       items.splice(idx, 1);
       renderMemberOthers(memberId);
       updateMemberOpacity(memberId);
