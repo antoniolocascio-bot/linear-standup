@@ -189,12 +189,24 @@
 
     .member.no-activity { opacity: 0.5; }
     .member.has-other { opacity: 1; }
+    .member.checked { opacity: 0.45; }
 
     .member-name {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
       font-size: 1.1rem;
       font-weight: 600;
       color: #111;
       margin-bottom: 0.75rem;
+    }
+
+    .member-check {
+      width: 1.1rem;
+      height: 1.1rem;
+      accent-color: #2563eb;
+      cursor: pointer;
+      flex-shrink: 0;
     }
 
     .section-label {
@@ -475,6 +487,18 @@ function addMemberOtherItem(memberId) {
   updateMemberOpacity(memberId);
 }
 
+const checkedMembers = new Set();
+
+function reorderMembers() {
+  const cards = Array.from(content.querySelectorAll(".member"));
+  cards.sort((a, b) => {
+    const aChecked = checkedMembers.has(a.dataset.memberId) ? 1 : 0;
+    const bChecked = checkedMembers.has(b.dataset.memberId) ? 1 : 0;
+    return aChecked - bChecked;
+  });
+  for (const card of cards) content.appendChild(card);
+}
+
 function renderActivity() {
   content.innerHTML = "";
 
@@ -482,12 +506,11 @@ function renderActivity() {
     const total = member.issues.length + member.orphanComments.length;
 
     const div = document.createElement("div");
-    div.className = "member" + (total === 0 ? " no-activity" : "");
+    const isChecked = checkedMembers.has(member.id);
+    div.className = "member" + (total === 0 && !isChecked ? " no-activity" : "") + (isChecked ? " checked" : "");
     div.dataset.memberId = member.id;
 
-    let html = `<div class="member-name">${esc(member.name)}</div>`;
-
-    const total = member.issues.length + member.orphanComments.length;
+    let html = `<div class="member-name"><input type="checkbox" class="member-check" data-check="${member.id}" ${isChecked ? "checked" : ""}><span>${esc(member.name)}</span></div>`;
 
     if (total === 0) {
       html += '<div style="font-size:0.85rem;color:#98a2b3">No activity in the selected timeframe</div>';
@@ -538,6 +561,21 @@ function renderActivity() {
     const input = div.querySelector(`.note-input-row input[data-member="${member.id}"]`);
     input.addEventListener("keydown", (e) => {
       if (e.key === "Enter") addMemberOtherItem(member.id);
+    });
+
+    // Wire up checkbox
+    const checkbox = div.querySelector(`.member-check[data-check="${member.id}"]`);
+    checkbox.addEventListener("change", () => {
+      if (checkbox.checked) {
+        checkedMembers.add(member.id);
+        div.classList.add("checked");
+        div.classList.remove("no-activity");
+      } else {
+        checkedMembers.delete(member.id);
+        div.classList.remove("checked");
+        if (total === 0) div.classList.add("no-activity");
+      }
+      reorderMembers();
     });
   }
 }
