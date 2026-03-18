@@ -494,7 +494,8 @@ function reorderMembers() {
   cards.sort((a, b) => {
     const aChecked = checkedMembers.has(a.dataset.memberId) ? 1 : 0;
     const bChecked = checkedMembers.has(b.dataset.memberId) ? 1 : 0;
-    return aChecked - bChecked;
+    if (aChecked !== bChecked) return aChecked - bChecked;
+    return (parseInt(a.dataset.origIndex) || 0) - (parseInt(b.dataset.origIndex) || 0);
   });
   for (const card of cards) content.appendChild(card);
 }
@@ -502,10 +503,11 @@ function reorderMembers() {
 function renderActivity() {
   content.innerHTML = "";
 
-  for (const member of activityData) {
+  activityData.forEach((member, idx) => {
     const total = member.issues.length + member.orphanComments.length;
 
     const div = document.createElement("div");
+    div.dataset.origIndex = idx;
     const isChecked = checkedMembers.has(member.id);
     div.className = "member" + (total === 0 && !isChecked ? " no-activity" : "") + (isChecked ? " checked" : "");
     div.dataset.memberId = member.id;
@@ -577,7 +579,7 @@ function renderActivity() {
       }
       reorderMembers();
     });
-  }
+  });
 }
 
 // ── Copy for Notion ──────────────────────────────────────────────────
