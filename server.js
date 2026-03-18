@@ -38,7 +38,8 @@ app.get("/api/teams", async (_req, res) => {
 
 app.get("/api/activity/:teamId", async (req, res) => {
   try {
-    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const hours = parseInt(req.query.hours) || 24;
+    const since = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
     const team = await linear.team(req.params.teamId);
     const membersConn = await team.members();
     const members = membersConn.nodes;
@@ -112,6 +113,8 @@ app.get("/api/activity/:teamId", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+app.get("/health", (_req, res) => res.json({ ok: true }));
 
 app.listen(PORT, () => {
   console.log(`Standup tool running at http://localhost:${PORT}`);

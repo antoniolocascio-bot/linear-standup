@@ -22,18 +22,30 @@
       display: flex;
       gap: 0.75rem;
       align-items: center;
-      margin-bottom: 2rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
     }
 
-    select, button {
+    select, button, input[type="number"] {
       font-family: inherit;
       font-size: 0.875rem;
-      padding: 0.5rem 1rem;
+      padding: 0.5rem 0.75rem;
       border-radius: 6px;
       border: 1px solid #333;
       background: #1a1a1a;
       color: #e0e0e0;
       cursor: pointer;
+    }
+
+    input[type="number"] { width: 4.5rem; cursor: text; }
+    input[type="number"]:focus { outline: none; border-color: #2563eb; }
+
+    .timeframe-group {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.85rem;
+      color: #aaa;
     }
 
     select:hover, button:hover { border-color: #555; }
@@ -54,11 +66,74 @@
     }
     button.copy:hover { background: #15803d; }
 
+    button.secondary {
+      background: #333;
+      border-color: #444;
+      color: #e0e0e0;
+    }
+    button.secondary:hover { background: #444; }
+
     .loading {
       color: #888;
       font-style: italic;
       padding: 2rem 0;
     }
+
+    /* ── Custom updates section ─────────────────────────────────── */
+
+    .custom-updates {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+      display: none;
+    }
+
+    .custom-updates-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+
+    .custom-updates-header span {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .custom-update-item {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+      align-items: start;
+    }
+
+    .custom-update-item input {
+      flex: 1;
+      font-family: inherit;
+      font-size: 0.85rem;
+      padding: 0.5rem 0.75rem;
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #e0e0e0;
+    }
+    .custom-update-item input:focus { outline: none; border-color: #2563eb; }
+    .custom-update-item input::placeholder { color: #555; }
+
+    .custom-update-item button {
+      padding: 0.5rem 0.6rem;
+      font-size: 0.8rem;
+      background: transparent;
+      border: 1px solid #444;
+      color: #888;
+      line-height: 1;
+    }
+    .custom-update-item button:hover { color: #e55; border-color: #e55; }
+
+    /* ── Member cards ───────────────────────────────────────────── */
 
     .member {
       background: #1a1a1a;
@@ -168,8 +243,21 @@
   <select id="team-select">
     <option value="">Loading teams...</option>
   </select>
+  <div class="timeframe-group">
+    <span>Last</span>
+    <input type="number" id="hours-input" value="24" min="1" max="168">
+    <span>hours</span>
+  </div>
   <button class="primary" id="fetch-btn" disabled>Fetch activity</button>
-  <button class="copy" id="copy-btn" style="display:none">Copy as Markdown</button>
+  <button class="copy" id="copy-btn" style="display:none">Copy for Notion</button>
+</div>
+
+<div class="custom-updates" id="custom-updates">
+  <div class="custom-updates-header">
+    <span>Custom Updates</span>
+    <button class="secondary" id="add-update-btn">+ Add</button>
+  </div>
+  <div id="custom-updates-list"></div>
 </div>
 
 <div id="content"></div>
@@ -177,10 +265,14 @@
 
 <script>
 const teamSelect = document.getElementById("team-select");
+const hoursInput = document.getElementById("hours-input");
 const fetchBtn = document.getElementById("fetch-btn");
 const copyBtn = document.getElementById("copy-btn");
 const content = document.getElementById("content");
 const toast = document.getElementById("toast");
+const customUpdatesSection = document.getElementById("custom-updates");
+const customUpdatesList = document.getElementById("custom-updates-list");
+const addUpdateBtn = document.getElementById("add-update-btn");
 
 let activityData = [];
 
@@ -201,21 +293,44 @@ async function loadTeams() {
 
 loadTeams();
 
+// ── Custom updates ───────────────────────────────────────────────────
+
+function addCustomUpdateRow(value = "") {
+  const row = document.createElement("div");
+  row.className = "custom-update-item";
+  row.innerHTML = `<input type="text" placeholder="Type an update..." value="${esc(value)}">
+    <button title="Remove">&times;</button>`;
+  row.querySelector("button").addEventListener("click", () => row.remove());
+  customUpdatesList.appendChild(row);
+  row.querySelector("input").focus();
+}
+
+addUpdateBtn.addEventListener("click", () => addCustomUpdateRow());
+
+function getCustomUpdates() {
+  return Array.from(customUpdatesList.querySelectorAll("input"))
+    .map((el) => el.value.trim())
+    .filter(Boolean);
+}
+
 // ── Fetch activity ───────────────────────────────────────────────────
 
 fetchBtn.addEventListener("click", async () => {
   const teamId = teamSelect.value;
   if (!teamId) return;
 
+  const hours = parseInt(hoursInput.value) || 24;
+
   content.innerHTML = '<div class="loading">Fetching activity from Linear...</div>';
   fetchBtn.disabled = true;
   copyBtn.style.display = "none";
 
   try {
-    const res = await fetch(`/api/activity/${teamId}`);
+    const res = await fetch(`/api/activity/${teamId}?hours=${hours}`);
     activityData = await res.json();
     renderActivity();
     copyBtn.style.display = "inline-block";
+    customUpdatesSection.style.display = "block";
   } catch (err) {
     content.innerHTML = `<div class="loading">Error: ${err.message}</div>`;
   } finally {
@@ -241,7 +356,7 @@ function renderActivity() {
     let html = `<div class="member-name">${esc(member.name)}</div>`;
 
     if (total === 0) {
-      html += '<div style="font-size:0.85rem;color:#666">No activity in the last 24h</div>';
+      html += '<div style="font-size:0.85rem;color:#666">No activity in the selected timeframe</div>';
     } else {
       if (member.updatedIssues.length) {
         html += '<div class="section-label">Updated issues</div>';
@@ -283,7 +398,10 @@ function renderActivity() {
   }
 }
 
-// ── Copy as Markdown ─────────────────────────────────────────────────
+// ── Copy for Notion ──────────────────────────────────────────────────
+// Notion parses pasted markdown well when each block is on its own line.
+// Key rules:  blank line before/after headings, blank line between bullets
+// and non-bullet content, no trailing spaces, use `>` for callouts.
 
 copyBtn.addEventListener("click", () => {
   const today = new Date().toLocaleDateString("en-US", {
@@ -293,7 +411,20 @@ copyBtn.addEventListener("click", () => {
     day: "numeric",
   });
 
-  let md = `# Standup — ${today}\n\n`;
+  const hours = parseInt(hoursInput.value) || 24;
+  const timeLabel = hours === 24 ? "last 24 hours" : `last ${hours}h`;
+
+  let md = `# Standup \u2014 ${today}\n\n`;
+
+  // Custom updates
+  const customUpdates = getCustomUpdates();
+  if (customUpdates.length) {
+    md += `## Custom Updates\n\n`;
+    for (const u of customUpdates) {
+      md += `- ${u}\n`;
+    }
+    md += `\n`;
+  }
 
   for (const member of activityData) {
     const total =
@@ -308,35 +439,36 @@ copyBtn.addEventListener("click", () => {
     md += `## ${member.name}\n\n`;
 
     if (member.updatedIssues.length) {
-      md += "**Updated issues**\n";
+      md += `### Updated Issues\n\n`;
       for (const i of member.updatedIssues) {
-        md += `- \`${i.identifier}\` ${i.title} [${i.state}]\n`;
+        md += `- **${i.identifier}** ${i.title} \u2014 *${i.state}*\n`;
       }
-      md += "\n";
+      md += `\n`;
     }
 
     if (member.createdIssues.length) {
-      md += "**Created issues**\n";
+      md += `### Created Issues\n\n`;
       for (const i of member.createdIssues) {
-        md += `- \`${i.identifier}\` ${i.title} [${i.state}]\n`;
+        md += `- **${i.identifier}** ${i.title} \u2014 *${i.state}*\n`;
       }
-      md += "\n";
+      md += `\n`;
     }
 
     if (member.comments.length) {
-      md += "**Comments**\n";
+      md += `### Comments\n\n`;
       for (const c of member.comments) {
-        const on = c.issue ? `${c.issue.identifier} ${c.issue.title}` : "unknown";
-        md += `- on ${on}: ${c.body.slice(0, 200)}${c.body.length > 200 ? "..." : ""}\n`;
+        const on = c.issue ? c.issue.identifier : "unknown";
+        const title = c.issue ? c.issue.title : "";
+        const body = c.body.replace(/\n/g, " ").slice(0, 200);
+        md += `- **${on}** ${title}\n`;
+        md += `    > ${body}${c.body.length > 200 ? "..." : ""}\n`;
       }
-      md += "\n";
+      md += `\n`;
     }
 
     if (notes) {
-      md += `**Notes**\n${notes}\n\n`;
+      md += `### Notes\n\n${notes}\n\n`;
     }
-
-    md += "---\n\n";
   }
 
   navigator.clipboard.writeText(md.trimEnd()).then(() => {
