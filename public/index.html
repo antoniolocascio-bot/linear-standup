@@ -37,16 +37,6 @@
       cursor: pointer;
     }
 
-    input[type="number"] { width: 4.5rem; cursor: text; }
-    input[type="number"]:focus { outline: none; border-color: #2563eb; }
-
-    .timeframe-group {
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-      font-size: 0.85rem;
-      color: #aaa;
-    }
 
     select:hover, button:hover { border-color: #555; }
 
@@ -243,11 +233,11 @@
   <select id="team-select">
     <option value="">Loading teams...</option>
   </select>
-  <div class="timeframe-group">
-    <span>Last</span>
-    <input type="number" id="hours-input" value="24" min="1" max="168">
-    <span>hours</span>
-  </div>
+  <select id="hours-input">
+    <option value="24">Last 24 hours</option>
+    <option value="48">Last 48 hours</option>
+    <option value="168">Last week</option>
+  </select>
   <button class="primary" id="fetch-btn" disabled>Fetch activity</button>
   <button class="copy" id="copy-btn" style="display:none">Copy for Notion</button>
 </div>
