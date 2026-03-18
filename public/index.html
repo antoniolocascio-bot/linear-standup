@@ -26,7 +26,7 @@
       flex-wrap: wrap;
     }
 
-    select, button, input[type="number"] {
+    select, button {
       font-family: inherit;
       font-size: 0.875rem;
       padding: 0.5rem 0.75rem;
@@ -36,7 +36,6 @@
       color: #e0e0e0;
       cursor: pointer;
     }
-
 
     select:hover, button:hover { border-color: #555; }
 
@@ -63,15 +62,24 @@
     }
     button.secondary:hover { background: #444; }
 
+    button.add-btn {
+      padding: 0.35rem 0.6rem;
+      font-size: 0.8rem;
+      background: #2563eb;
+      border-color: #2563eb;
+      color: #fff;
+    }
+    button.add-btn:hover { background: #1d4ed8; }
+
     .loading {
       color: #888;
       font-style: italic;
       padding: 2rem 0;
     }
 
-    /* ── Custom updates section ─────────────────────────────────── */
+    /* ── Custom person section ─────────────────────────────────── */
 
-    .custom-updates {
+    .custom-person {
       background: #1a1a1a;
       border: 1px solid #2a2a2a;
       border-radius: 8px;
@@ -80,27 +88,70 @@
       display: none;
     }
 
-    .custom-updates-header {
+    .custom-person-header {
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      gap: 0.75rem;
       margin-bottom: 0.75rem;
     }
 
-    .custom-updates-header span {
+    .custom-person-header span {
       font-size: 1.1rem;
       font-weight: 600;
       color: #fff;
     }
 
-    .custom-update-item {
+    .custom-person-header input {
+      flex: 1;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 0.4rem 0.75rem;
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #fff;
+    }
+    .custom-person-header input:focus { outline: none; border-color: #2563eb; }
+    .custom-person-header input::placeholder { color: #555; font-weight: 400; }
+
+    /* ── Shared: other items list ──────────────────────────────── */
+
+    .other-item {
       display: flex;
       gap: 0.5rem;
-      margin-bottom: 0.5rem;
-      align-items: start;
+      align-items: center;
+      padding: 0.2rem 0;
+      font-size: 0.85rem;
     }
 
-    .custom-update-item input {
+    .other-item span {
+      flex: 1;
+    }
+
+    .other-item button {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.75rem;
+      background: transparent;
+      border: 1px solid #444;
+      color: #888;
+      line-height: 1;
+    }
+    .other-item button:hover { color: #e55; border-color: #e55; }
+
+    .other-items-list {
+      margin-bottom: 0.5rem;
+    }
+
+    /* ── Note input row (shared between members and custom) ──── */
+
+    .note-input-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+
+    .note-input-row input {
       flex: 1;
       font-family: inherit;
       font-size: 0.85rem;
@@ -110,18 +161,8 @@
       border-radius: 6px;
       color: #e0e0e0;
     }
-    .custom-update-item input:focus { outline: none; border-color: #2563eb; }
-    .custom-update-item input::placeholder { color: #555; }
-
-    .custom-update-item button {
-      padding: 0.5rem 0.6rem;
-      font-size: 0.8rem;
-      background: transparent;
-      border: 1px solid #444;
-      color: #888;
-      line-height: 1;
-    }
-    .custom-update-item button:hover { color: #e55; border-color: #e55; }
+    .note-input-row input:focus { outline: none; border-color: #2563eb; }
+    .note-input-row input::placeholder { color: #555; }
 
     /* ── Member cards ───────────────────────────────────────────── */
 
@@ -134,6 +175,7 @@
     }
 
     .member.no-activity { opacity: 0.5; }
+    .member.has-other { opacity: 1; }
 
     .member-name {
       font-size: 1.1rem;
@@ -191,23 +233,6 @@
       margin-left: 1rem;
     }
 
-    .notes-field {
-      width: 100%;
-      margin-top: 0.75rem;
-      padding: 0.5rem 0.75rem;
-      font-family: inherit;
-      font-size: 0.85rem;
-      background: #111;
-      border: 1px solid #333;
-      border-radius: 6px;
-      color: #e0e0e0;
-      resize: vertical;
-      min-height: 2.5rem;
-    }
-
-    .notes-field::placeholder { color: #555; }
-    .notes-field:focus { outline: none; border-color: #2563eb; }
-
     .toast {
       position: fixed;
       bottom: 2rem;
@@ -242,12 +267,18 @@
   <button class="copy" id="copy-btn" style="display:none">Copy for Notion</button>
 </div>
 
-<div class="custom-updates" id="custom-updates">
-  <div class="custom-updates-header">
-    <span>Custom Updates</span>
-    <button class="secondary" id="add-update-btn">+ Add</button>
+<!-- Custom person (outside the team) -->
+<div class="custom-person" id="custom-person">
+  <div class="custom-person-header">
+    <span>Guest:</span>
+    <input type="text" id="custom-person-name" placeholder="Name...">
   </div>
-  <div id="custom-updates-list"></div>
+  <div class="section-label">Other</div>
+  <div class="other-items-list" id="custom-person-others"></div>
+  <div class="note-input-row">
+    <input type="text" id="custom-person-input" placeholder="Add an update...">
+    <button class="add-btn" id="custom-person-add">Add</button>
+  </div>
 </div>
 
 <div id="content"></div>
@@ -260,11 +291,15 @@ const fetchBtn = document.getElementById("fetch-btn");
 const copyBtn = document.getElementById("copy-btn");
 const content = document.getElementById("content");
 const toast = document.getElementById("toast");
-const customUpdatesSection = document.getElementById("custom-updates");
-const customUpdatesList = document.getElementById("custom-updates-list");
-const addUpdateBtn = document.getElementById("add-update-btn");
+const customPersonSection = document.getElementById("custom-person");
+const customPersonName = document.getElementById("custom-person-name");
+const customPersonOthers = document.getElementById("custom-person-others");
+const customPersonInput = document.getElementById("custom-person-input");
+const customPersonAddBtn = document.getElementById("custom-person-add");
 
 let activityData = [];
+// Store "Other" items per member id
+const memberOtherItems = {};
 
 // ── Load teams ───────────────────────────────────────────────────────
 
@@ -283,25 +318,36 @@ async function loadTeams() {
 
 loadTeams();
 
-// ── Custom updates ───────────────────────────────────────────────────
+// ── Custom person (guest) ────────────────────────────────────────────
 
-function addCustomUpdateRow(value = "") {
-  const row = document.createElement("div");
-  row.className = "custom-update-item";
-  row.innerHTML = `<input type="text" placeholder="Type an update..." value="${esc(value)}">
-    <button title="Remove">&times;</button>`;
-  row.querySelector("button").addEventListener("click", () => row.remove());
-  customUpdatesList.appendChild(row);
-  row.querySelector("input").focus();
+let customPersonItems = [];
+
+function renderCustomPersonOthers() {
+  customPersonOthers.innerHTML = "";
+  customPersonItems.forEach((text, idx) => {
+    const row = document.createElement("div");
+    row.className = "other-item";
+    row.innerHTML = `<span>\u2022 ${esc(text)}</span><button title="Remove">&times;</button>`;
+    row.querySelector("button").addEventListener("click", () => {
+      customPersonItems.splice(idx, 1);
+      renderCustomPersonOthers();
+    });
+    customPersonOthers.appendChild(row);
+  });
 }
 
-addUpdateBtn.addEventListener("click", () => addCustomUpdateRow());
-
-function getCustomUpdates() {
-  return Array.from(customUpdatesList.querySelectorAll("input"))
-    .map((el) => el.value.trim())
-    .filter(Boolean);
+function addCustomPersonItem() {
+  const val = customPersonInput.value.trim();
+  if (!val) return;
+  customPersonItems.push(val);
+  customPersonInput.value = "";
+  renderCustomPersonOthers();
 }
+
+customPersonAddBtn.addEventListener("click", addCustomPersonItem);
+customPersonInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") addCustomPersonItem();
+});
 
 // ── Fetch activity ───────────────────────────────────────────────────
 
@@ -320,7 +366,7 @@ fetchBtn.addEventListener("click", async () => {
     activityData = await res.json();
     renderActivity();
     copyBtn.style.display = "inline-block";
-    customUpdatesSection.style.display = "block";
+    customPersonSection.style.display = "block";
   } catch (err) {
     content.innerHTML = `<div class="loading">Error: ${err.message}</div>`;
   } finally {
@@ -329,6 +375,51 @@ fetchBtn.addEventListener("click", async () => {
 });
 
 // ── Render ────────────────────────────────────────────────────────────
+
+function getMemberOtherItems(memberId) {
+  if (!memberOtherItems[memberId]) memberOtherItems[memberId] = [];
+  return memberOtherItems[memberId];
+}
+
+function renderMemberOthers(memberId) {
+  const list = document.querySelector(`.other-items-list[data-member="${memberId}"]`);
+  if (!list) return;
+  const items = getMemberOtherItems(memberId);
+  list.innerHTML = "";
+  items.forEach((text, idx) => {
+    const row = document.createElement("div");
+    row.className = "other-item";
+    row.innerHTML = `<span>\u2022 ${esc(text)}</span><button title="Remove">&times;</button>`;
+    row.querySelector("button").addEventListener("click", () => {
+      items.splice(idx, 1);
+      renderMemberOthers(memberId);
+      updateMemberOpacity(memberId);
+    });
+    list.appendChild(row);
+  });
+}
+
+function updateMemberOpacity(memberId) {
+  const card = document.querySelector(`.member[data-member-id="${memberId}"]`);
+  if (!card) return;
+  const items = getMemberOtherItems(memberId);
+  if (items.length > 0) {
+    card.classList.add("has-other");
+  } else {
+    card.classList.remove("has-other");
+  }
+}
+
+function addMemberOtherItem(memberId) {
+  const input = document.querySelector(`.note-input-row input[data-member="${memberId}"]`);
+  if (!input) return;
+  const val = input.value.trim();
+  if (!val) return;
+  getMemberOtherItems(memberId).push(val);
+  input.value = "";
+  renderMemberOthers(memberId);
+  updateMemberOpacity(memberId);
+}
 
 function renderActivity() {
   content.innerHTML = "";
@@ -381,17 +472,31 @@ function renderActivity() {
       }
     }
 
-    html += `<textarea class="notes-field" data-member="${member.id}" placeholder="Notes for ${esc(member.name)}..."></textarea>`;
+    // Other section — always shown
+    html += '<div class="section-label">Other</div>';
+    html += `<div class="other-items-list" data-member="${member.id}"></div>`;
+    html += `<div class="note-input-row">
+      <input type="text" data-member="${member.id}" placeholder="Add an update for ${esc(member.name)}...">
+      <button class="add-btn" data-member-add="${member.id}">Add</button>
+    </div>`;
 
     div.innerHTML = html;
     content.appendChild(div);
+
+    // Render existing other items
+    renderMemberOthers(member.id);
+
+    // Wire up add button and Enter key
+    const addBtn = div.querySelector(`button[data-member-add="${member.id}"]`);
+    addBtn.addEventListener("click", () => addMemberOtherItem(member.id));
+    const input = div.querySelector(`.note-input-row input[data-member="${member.id}"]`);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") addMemberOtherItem(member.id);
+    });
   }
 }
 
 // ── Copy for Notion ──────────────────────────────────────────────────
-// Notion parses pasted markdown well when each block is on its own line.
-// Key rules:  blank line before/after headings, blank line between bullets
-// and non-bullet content, no trailing spaces, use `>` for callouts.
 
 copyBtn.addEventListener("click", () => {
   const today = new Date().toLocaleDateString("en-US", {
@@ -401,30 +506,29 @@ copyBtn.addEventListener("click", () => {
     day: "numeric",
   });
 
-  const hours = parseInt(hoursInput.value) || 24;
-  const timeLabel = hours === 24 ? "last 24 hours" : `last ${hours}h`;
-
   let md = `# Standup \u2014 ${today}\n\n`;
 
-  // Custom updates
-  const customUpdates = getCustomUpdates();
-  if (customUpdates.length) {
-    md += `## Custom Updates\n\n`;
-    for (const u of customUpdates) {
-      md += `- ${u}\n`;
+  // Custom person (guest)
+  const guestName = customPersonName.value.trim();
+  if (guestName && customPersonItems.length) {
+    md += `## ${guestName}\n\n`;
+    md += `### Other\n\n`;
+    for (const item of customPersonItems) {
+      md += `- ${item}\n`;
     }
     md += `\n`;
   }
 
+  // Team members
   for (const member of activityData) {
     const total =
       member.updatedIssues.length +
       member.createdIssues.length +
       member.comments.length;
 
-    const notes = document.querySelector(`textarea[data-member="${member.id}"]`)?.value?.trim();
+    const otherItems = getMemberOtherItems(member.id);
 
-    if (total === 0 && !notes) continue;
+    if (total === 0 && otherItems.length === 0) continue;
 
     md += `## ${member.name}\n\n`;
 
@@ -456,8 +560,12 @@ copyBtn.addEventListener("click", () => {
       md += `\n`;
     }
 
-    if (notes) {
-      md += `### Notes\n\n${notes}\n\n`;
+    if (otherItems.length) {
+      md += `### Other\n\n`;
+      for (const item of otherItems) {
+        md += `- ${item}\n`;
+      }
+      md += `\n`;
     }
   }
 
